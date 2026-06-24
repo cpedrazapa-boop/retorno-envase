@@ -3,8 +3,8 @@ name: Procesar Excel a JSON
 on:
   push:
     paths:
-      - '**.xlsx'
-      - '**.xls'
+      - "**.xlsx"
+      - "**.xls"
 
 jobs:
   procesar:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Instalar dependencias
         run: pip install pandas openpyxl
@@ -31,5 +31,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/data.json
-          git diff --staged --quiet || git commit -m "Datos actualizados $(date +'%Y-%m-%d')"
+          git diff --staged --quiet || git commit -m "Datos actualizados"
           git push
