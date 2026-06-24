@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Retorno de Envase</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f0eb;color:#222;font-size:13px}
+.hdr{background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:17px;font-weight:700}
+.hdr small{font-size:11px;opacity:.7}
+.fbar{background:#fff;border-bottom:1px solid #ddd;padding:10px 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fbar label{font-size:11px;font-weight:700;color:#555;margin-right:3px}
+.fbar select{padding:5px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px;min-width:150px}
+.fbar button{padding:5px 14px;border:none;border-radius:5px;font-size:12px;cursor:pointer}
+.btn-p{background:#1a3a5c;color:#fff}
+.btn-s{background:#fff;color:#1a3a5c;border:1px solid #1a3a5c!important}
+.wrap{padding:16px 20px;max-width:1400px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border-radius:8px;padding:14px;border:1px solid #ddd}
+.kpi .lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.kpi .val{font-size:22px;font-weight:700}
+.kpi .sub{font-size:10px;color:#aaa;margin-top:3px}
+.green .val{color:#1a7a45}.red .val{color:#b83030}.blue .val{color:#1a3a5c}.orange .val{color:#c85000}
+.tcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:16px}
+.tc{background:#fff;border-radius:7px;padding:11px;border:1px solid #ddd;border-left:3px solid}
+.tc .tn{font-size:10px;color:#555;font-weight:700;margin-bottom:3px}
+.tc .tv{font-size:15px;font-weight:700;color:#1a3a5c}
+.tc .td{font-size:10px;margin-top:2px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:750px){.charts{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:8px;padding:14px;border:1px solid #ddd}
+.card h3{font-size:12px;font-weight:700;color:#333;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid #eee}
+.dtl{background:#fff;border-radius:8px;padding:14px;border:1px solid #ddd;margin-bottom:16px}
+.dtl h3{font-size:12px;font-weight:700;color:#333;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid #eee}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid #ccc;background:#fff;color:#555}
+.tab.on{background:#1a3a5c;color:#fff;border-color:#1a3a5c}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:7px 9px;background:#f0f0eb;color:#555;font-weight:700;border-bottom:1px solid #ddd;white-space:nowrap}
+td{padding:6px 9px;border-bottom:1px solid #f0ede5;color:#333}
+tr:hover td{background:#fafaf5}
+.bv{background:#fce9e6;color:#b83030;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700}
+.br{background:#e6f4ed;color:#1a7a45;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700}
+.bp{background:#e8eef8;color:#1a3a5c;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700}
+.pos{color:#1a7a45;font-weight:700}.neg{color:#b83030;font-weight:700}.zer{color:#aaa}
+.note{font-size:10px;color:#888;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>📦 Dashboard Retorno de Envase</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <small id="rango"></small>
+    <label style="background:#2a5a8c;color:#fff;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:12px;white-space:nowrap">
+      📂 Cargar Excel
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="cargarExcel(this)">
+    </label>
+    <span id="cargando" style="color:#7be;font-size:11px;display:none">Cargando...</span>
+  </div>
+</div>
+<div class="fbar">
+  <div style="position:relative">
+    <label>Cliente</label>
+    <div style="position:relative">
+      <input id="clienteBuscar" type="text" placeholder="🔍 Buscar cliente..." autocomplete="off"
+        oninput="filtrarListaClientes()" onfocus="mostrarDropdown()" onblur="setTimeout(ocultarDropdown,200)"
+        style="padding:5px 8px;border:1px solid #ccc;border-radius:5px;font-size:12px;min-width:180px;width:100%">
+      <div id="clienteDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:0 0 5px 5px;max-height:200px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>
+    </div>
+    <input type="hidden" id="fc" value="">
+  </div>
+  <div><label>Envase</label><select id="fe" onchange="aplicar()"><option value="">Todos</option></select></div>
+  <div><label>Mes</label><select id="fm" onchange="aplicar()"><option value="">Todos</option></select></div>
+  <div><label>Semana</label><select id="fw" onchange="aplicar()"><option value="">Todas</option></select></div>
+  <div><label>Tipo PMO/TAT</label><select id="ft" onchange="aplicarTipo()"><option value="">Todos</option><option>PMO</option><option>TAT</option></select></div>
+  <div><label>Ver por</label><select id="fg" onchange="aplicar()"><option value="dia">Día</option><option value="semana">Semana</option><option value="mes">Mes</option></select></div>
+  <button class="btn-s" onclick="limpiar()">✕ Limpiar</button>
+</div>
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <div class="tcards" id="tcards"></div>
+  <div class="charts">
+    <div class="card"><h3>Venta vs Retorno — Tendencia (Unidades)</h3><div style="position:relative;height:240px"><canvas id="cT" role="img" aria-label="Tendencia venta vs retorno">Tendencia.</canvas></div></div>
+    <div class="card"><h3>Diferencia Neta por Tipo de Envase (Unidades)</h3><div style="position:relative;height:240px"><canvas id="cE" role="img" aria-label="Diferencia por envase">Diferencia.</canvas></div></div>
+  </div>
+  <div class="charts">
+    <div class="card"><h3>Distribución Retorno por Cliente (Unidades)</h3><div style="position:relative;height:180px"><canvas id="cC" role="img" aria-label="Por cliente">Por cliente.</canvas></div><div id="tblClientes" style="overflow-y:auto;max-height:130px;margin-top:8px"></div></div>
+    <div class="card"><h3>% Retorno sobre Venta por Envase</h3><div style="position:relative;height:220px"><canvas id="cP" role="img" aria-label="% retorno">% retorno.</canvas></div></div>
+  </div>
+  <div class="dtl">
+    <h3>Detalle de Movimientos</h3>
+    <div class="tabs">
+      <div class="tab on" onclick="setTab('resumen',this)">Resumen por Período</div>
+      <div class="tab" onclick="setTab('visual',this)">🟢 Visual D-1</div>
+      <div class="tab" onclick="setTab('saldo',this)">Saldo Acumulado por Envase</div>
+      <div class="tab" onclick="setTab('envase',this)">Por Tipo de Envase</div>
+      <div class="tab" onclick="setTab('tx',this)">Transacciones</div>
+    </div>
+    <div style="overflow-x:auto" id="tbl"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+Chart.register(ChartDataLabels);
+
+let DATA_DEFAULT=[];
+let D=[], FD=[];
+
+// Mostrar overlay de carga sin tocar el DOM existente
+document.addEventListener('DOMContentLoaded',()=>{
+  const overlay=document.createElement('div');
+  overlay.id='loader';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f0eb;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+  overlay.innerHTML=`
+    <div style="font-size:32px">📦</div>
+    <div style="font-size:18px;font-weight:700;color:#1a3a5c">Dashboard Retorno de Envase</div>
+    <div style="font-size:13px;color:#888">Cargando datos...</div>
+    <div style="width:200px;height:4px;background:#ddd;border-radius:2px;overflow:hidden">
+      <div id="progBar" style="width:0%;height:100%;background:#1a3a5c;border-radius:2px;transition:width .3s"></div>
+    </div>
+    <div id="loaderMsg" style="font-size:11px;color:#aaa">Conectando...</div>`;
+  document.body.appendChild(overlay);
+  cargarDatos();
+});
+
+function setProgress(pct, msg){
+  const b=document.getElementById('progBar');
+  const m=document.getElementById('loaderMsg');
+  if(b) b.style.width=pct+'%';
+  if(m) m.textContent=msg;
+}
+
+async function cargarDatos(){
+  try{
+    setProgress(20,'Descargando datos...');
+    // Intentar cargar data.json con cache-buster para siempre tener datos frescos
+    const url='data/data.json?v='+Date.now();
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    setProgress(60,'Procesando...');
+    const json=await resp.json();
+    DATA_DEFAULT=json;
+    D=[...DATA_DEFAULT];
+    FD=[...D];
+    setProgress(100,'Listo');
+    setTimeout(()=>{
+      const loader=document.getElementById('loader');
+      if(loader) loader.remove();
+      init();
+      render();
+    },100);
+  } catch(err){
+    const m=document.getElementById('loaderMsg');
+    if(m) m.innerHTML=`<span style="color:#b83030">Error cargando datos: ${err.message}</span><br>
+      <span style="color:#888">¿Existe el archivo data/data.json?</span>`;
+  }
+}, FD=[...D], TAB='resumen', CH={};
+
+function gV(d){ return d.m==='Venta'?Math.abs(d.u):0; }
+function gR(d){ return d.m==='Retorno'?Math.abs(d.u):0; }
+const fmtI=n=>Math.round(n).toLocaleString('es-CO');
+const fmtN=n=>Math.round(Math.abs(n)).toLocaleString('es-CO');
+const MESES={1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
+
+// ── Cargador de Excel ──────────────────────────────────────────────
+function cargarExcel(input){
+  if(!input||!input.files||!input.files[0]) return;
+  const file=input.files[0];
+  const carg=document.getElementById('cargando');
+  carg.textContent='Leyendo archivo...';
+  carg.style.display='inline';
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      carg.textContent='Procesando...';
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true,dense:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      // Leer solo las primeras 5 filas para detectar columnas
+      const allRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!allRows.length){
+        alert('El archivo está vacío.'); carg.style.display='none'; input.value=''; return;
+      }
+
+      // Mostrar las columnas encontradas y pedir mapeo
+      const keysFound=Object.keys(allRows[0]);
+      mostrarMapeoColumnas(keysFound, allRows, carg);
+    } catch(err){
+      alert('Error al leer:\n'+err.message);
+      carg.style.display='none';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
+}
+
+function mostrarMapeoColumnas(keys, allRows, carg){
+  carg.style.display='none';
+
+  // Intentar mapeo automático primero
+  const norm=k=>k.trim().toLowerCase();
+  const autoMap={
+    fecha:   keys.find(k=>['fe.contab.','fecha','date','fe contab','fecontab'].includes(norm(k))),
+    cliente: keys.find(k=>['name socio','cliente','socio','cliente nombre','namesocio'].includes(norm(k))),
+    envase:  keys.find(k=>['texto breve de material','material','envase','descripcion','textobrevedematerial'].includes(norm(k))),
+    mov:     keys.find(k=>['movimiento','tipo','movement','mov'].includes(norm(k))),
+    uds:     keys.find(k=>['unidades','units','cantidad','uds'].includes(norm(k))),
+    pmo:     keys.find(k=>['pmo ?','pmo','tipo_pmo','tipo pmo'].includes(norm(k))),
+    week:    keys.find(k=>['week','semana','wk','semana_num'].includes(norm(k))),
+  };
+
+  const labels={fecha:'Fecha (Fe.contab.)',cliente:'Cliente (Name Socio)',envase:'Tipo Envase (Material)',mov:'Movimiento (Venta/Retorno)',uds:'Unidades',pmo:'PMO/TAT',week:'Semana (Week)'};
+  const required=['fecha','cliente','envase','mov','uds'];
+
+  // Si todos los requeridos se detectaron automáticamente, procesar directo
+  const allFound=required.every(f=>autoMap[f]);
+  if(allFound){
+    procesarExcel(allRows, autoMap, carg);
+    return;
+  }
+
+  // Si faltan columnas, mostrar modal de mapeo
+  const opts=keys.map(k=>`<option value="${k}">${k}</option>`).join('');
+  const optsOpt=`<option value="">— No disponible —</option>`+opts;
+
+  const fields=Object.entries(labels).map(([k,lbl])=>{
+    const sel=autoMap[k]?`<option value="${autoMap[k]}" selected>${autoMap[k]}</option>`+opts:(required.includes(k)?opts:optsOpt);
+    const req=required.includes(k)?'<span style="color:#b83030">*</span>':'';
+    return `<tr>
+      <td style="padding:6px 10px;font-size:12px;font-weight:600">${lbl} ${req}</td>
+      <td style="padding:6px 10px"><select id="map_${k}" style="width:100%;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:12px">${sel}</select></td>
+    </tr>`;
+  }).join('');
+
+  const modal=document.createElement('div');
+  modal.id='mapModal';
+  modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+    <div style="background:#fff;border-radius:10px;padding:24px;max-width:520px;width:95%;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <h3 style="margin:0 0 6px;font-size:15px;color:#1a3a5c">📋 Mapeo de columnas</h3>
+      <p style="font-size:11px;color:#888;margin:0 0 14px">El archivo tiene <b>${allRows.length.toLocaleString('es-CO')}</b> filas. Confirma qué columna corresponde a cada campo. <span style="color:#b83030">*</span> = requerido</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+        <thead><tr style="background:#f0f0eb"><th style="padding:6px 10px;font-size:11px;text-align:left">Campo</th><th style="padding:6px 10px;font-size:11px;text-align:left">Columna del archivo</th></tr></thead>
+        <tbody>${fields}</tbody>
+      </table>
+      <div style="font-size:10px;color:#aaa;margin-bottom:14px">Columnas disponibles: ${keys.length} &nbsp;|&nbsp; Muestra: ${keys.slice(0,5).join(', ')}${keys.length>5?'...':''}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="document.getElementById('mapModal').remove()" style="padding:6px 16px;border:1px solid #ccc;border-radius:5px;background:#fff;cursor:pointer;font-size:12px">Cancelar</button>
+        <button onclick="confirmarMapeo()" style="padding:6px 16px;background:#1a3a5c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px">✓ Procesar archivo</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Guardar allRows para uso posterior
+  window._pendingRows=allRows;
+  window._pendingCarg=carg;
+}
+
+function confirmarMapeo(){
+  const mapeo={};
+  ['fecha','cliente','envase','mov','uds','pmo','week'].forEach(k=>{
+    const el=document.getElementById('map_'+k);
+    if(el&&el.value) mapeo[k]=el.value;
+  });
+  const required=['fecha','cliente','envase','mov','uds'];
+  const missing=required.filter(k=>!mapeo[k]);
+  if(missing.length){
+    const labels2={fecha:'Fecha',cliente:'Cliente',envase:'Envase',mov:'Movimiento',uds:'Unidades'};
+    alert('Faltan columnas requeridas:\n'+missing.map(k=>labels2[k]).join('\n'));
+    return;
+  }
+  document.getElementById('mapModal').remove();
+  const carg=window._pendingCarg||document.getElementById('cargando');
+  carg.textContent='Procesando '+window._pendingRows.length.toLocaleString('es-CO')+' filas...';
+  carg.style.display='inline';
+  // Dar tiempo al browser para pintar el mensaje antes de bloquear con el procesamiento
+  setTimeout(()=>procesarExcel(window._pendingRows, mapeo, carg), 50);
+}
+
+function procesarExcel(rows, mapeo, carg){
+  const parseFecha=(v)=>{
+    if(v instanceof Date) return v.toISOString().slice(0,10);
+    if(typeof v==='number'){
+      const d=new Date(Math.round((v-25569)*86400*1000));
+      return d.toISOString().slice(0,10);
+    }
+    if(typeof v==='string'&&v){
+      const d=new Date(v); if(!isNaN(d)) return d.toISOString().slice(0,10);
+      return String(v).slice(0,10);
+    }
+    return '';
+  };
+
+  const agg=new Map();
+  let skipped=0;
+
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i];
+    const f=parseFecha(r[mapeo.fecha]);
+    const c=String(r[mapeo.cliente]||'').trim();
+    const env=String(r[mapeo.envase]||'').trim();
+    const movRaw=String(r[mapeo.mov]||'').trim().toLowerCase();
+    const uds=parseInt(r[mapeo.uds]||0)||0;
+    if(!f||!c||!env||!movRaw){skipped++;continue;}
+
+    const isRet=movRaw.includes('retorno');
+    const movNorm=isRet?'Retorno':'Venta';
+    const pmo=mapeo.pmo?String(r[mapeo.pmo]||'PMO').trim()||'PMO':'PMO';
+    let week=mapeo.week?parseInt(r[mapeo.week]||0)||0:0;
+    if(!week&&f){
+      const d=new Date(f);
+      const start=new Date(d.getFullYear(),0,1);
+      week=Math.ceil(((d-start)/86400000+start.getDay()+1)/7);
+    }
+
+    const key=`${f}|${c}|${env}|${movNorm}|${pmo}|${week}`;
+    const cur=agg.get(key);
+    if(cur){ cur.u+=uds; }
+    else { agg.set(key,{f,c,e:env,m:movNorm,p:pmo,w:week,u:uds}); }
+  }
+
+  const parsed=[...agg.values()];
+  if(!parsed.length){
+    alert('No se pudieron procesar registros válidos.\nVerifica que las columnas seleccionadas contengan los datos correctos.');
+    carg.style.display='none'; return;
+  }
+
+  D=[...parsed]; FD=[...D];
+
+  // Repoblar selects
+  ['fc','fe','fm','fw','ft'].forEach(id=>document.getElementById(id).value='');
+  const fe=document.getElementById('fe');
+  const fw=document.getElementById('fw'), fm=document.getElementById('fm');
+  [fe,fw,fm].forEach(sel=>{while(sel.options.length>1)sel.remove(1);});
+  document.getElementById('fc').value='';
+  document.getElementById('clienteBuscar').value='';
+  const cs=[...new Set(D.map(d=>d.c))].sort();
+  const es=[...new Set(D.map(d=>d.e))].sort();
+  const ws=[...new Set(D.map(d=>d.w))].sort((a,b)=>a-b);
+  const ms=[...new Set(D.map(d=>parseInt(d.f.slice(5,7))))].sort((a,b)=>a-b);
+  poblarClientes(cs);
+  es.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
+  ws.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent='Semana '+w;fw.appendChild(o);});
+  ms.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MESES[m];fm.appendChild(o);});
+  const fs=D.map(d=>d.f).sort();
+  document.getElementById('rango').textContent=fs[0]+' → '+fs[fs.length-1];
+
+  carg.style.display='none';
+  alert(`✅ Cargado correctamente.\n\nFilas originales: ${rows.length.toLocaleString('es-CO')}\nRegistros agrupados: ${parsed.length.toLocaleString('es-CO')}\nFilas omitidas: ${skipped}`);
+  render();
+}
+
+
+// ── Buscador de cliente ────────────────────────────────────────────
+let _clientesDisponibles = [];
+
+function poblarClientes(lista){
+  _clientesDisponibles = lista;
+  // Si el cliente seleccionado ya no está en la lista, limpiar
+  const actual = document.getElementById('fc').value;
+  if(actual && !lista.includes(actual)){
+    document.getElementById('fc').value = '';
+    document.getElementById('clienteBuscar').value = '';
+  }
+  filtrarListaClientes();
+}
+
+function filtrarListaClientes(){
+  const q = document.getElementById('clienteBuscar').value.toLowerCase().trim();
+  const dd = document.getElementById('clienteDropdown');
+  const lista = q
+    ? _clientesDisponibles.filter(c=>c.toLowerCase().includes(q))
+    : _clientesDisponibles;
+
+  if(!lista.length){
+    dd.innerHTML='<div style="padding:8px 10px;font-size:11px;color:#aaa">Sin resultados</div>';
+    dd.style.display='block'; return;
+  }
+
+  dd.innerHTML = lista.map(c=>{
+    const actual = document.getElementById('fc').value;
+    const sel = c===actual ? 'background:#e8eef8;font-weight:700' : '';
+    const bold = q ? c.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<b>$1</b>') : c;
+    return `<div onclick="seleccionarCliente('${c.replace(/'/g,"\\'")}');aplicar()"
+      style="padding:7px 10px;font-size:12px;cursor:pointer;${sel}"
+      onmouseover="this.style.background='#f5f5f0'"
+      onmouseout="this.style.background='${c===document.getElementById('fc').value?'#e8eef8':''}'">
+      ${bold}
+    </div>`;
+  }).join('');
+
+  // Opción "Todos" al inicio si hay filtro activo
+  const todos = `<div onclick="seleccionarCliente('');aplicar()"
+    style="padding:7px 10px;font-size:12px;cursor:pointer;color:#888;border-bottom:1px solid #eee"
+    onmouseover="this.style.background='#f5f5f0'" onmouseout="this.style.background=''">
+    — Todos los clientes —
+  </div>`;
+  dd.innerHTML = todos + dd.innerHTML;
+  dd.style.display = 'block';
+}
+
+function seleccionarCliente(c){
+  document.getElementById('fc').value = c;
+  document.getElementById('clienteBuscar').value = c;
+  document.getElementById('clienteDropdown').style.display = 'none';
+}
+
+function mostrarDropdown(){
+  filtrarListaClientes();
+  document.getElementById('clienteDropdown').style.display = 'block';
+}
+function ocultarDropdown(){
+  document.getElementById('clienteDropdown').style.display = 'none';
+}
+
+// Cuando cambia PMO/TAT, actualizar lista de clientes disponibles y luego aplicar
+function aplicarTipo(){
+  const ti = document.getElementById('ft').value;
+  // Clientes disponibles según el tipo seleccionado
+  const clientesFiltrados = ti
+    ? [...new Set(D.filter(d=> ti==='PMO'?d.p==='PMO':d.p!=='PMO').map(d=>d.c))].sort()
+    : [...new Set(D.map(d=>d.c))].sort();
+  poblarClientes(clientesFiltrados);
+  aplicar();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+function lbl(d){
+  const g=document.getElementById('fg').value;
+  if(g==='semana') return 'Sem '+d.w;
+  if(g==='mes') return MESES[parseInt(d.f.slice(5,7))]+' '+d.f.slice(0,4);
+  return d.f;
+}
+
+function init(){
+  const cs=[...new Set(D.map(d=>d.c))].sort();
+  const es=[...new Set(D.map(d=>d.e))].sort();
+  const ws=[...new Set(D.map(d=>d.w))].sort((a,b)=>a-b);
+  const ms=[...new Set(D.map(d=>parseInt(d.f.slice(5,7))))].sort((a,b)=>a-b);
+  const fe=document.getElementById('fe');
+  const fw=document.getElementById('fw'),fm=document.getElementById('fm');
+  es.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
+  ws.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent='Semana '+w;fw.appendChild(o);});
+  ms.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MESES[m];fm.appendChild(o);});
+  poblarClientes(cs);
+  const fs=D.map(d=>d.f).sort();
+  document.getElementById('rango').textContent=fs[0]+' → '+fs[fs.length-1];
+}
+
+function aplicar(){
+  const cl=document.getElementById('fc').value;
+  const en=document.getElementById('fe').value;
+  const wk=document.getElementById('fw').value;
+  const me=document.getElementById('fm').value;
+  const ti=document.getElementById('ft').value;
+  FD=D.filter(d=>{
+    if(cl && d.c!==cl) return false;
+    if(en && d.e!==en) return false;
+    if(wk && d.w!=wk) return false;
+    if(me && parseInt(d.f.slice(5,7))!=me) return false;
+    if(ti==='PMO' && d.p!=='PMO') return false;
+    if(ti==='TAT' && d.p==='PMO') return false;
+    return true;
+  });
+  render();
+}
+
+function limpiar(){
+  ['fe','fm','fw','ft'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fc').value='';
+  document.getElementById('clienteBuscar').value='';
+  document.getElementById('clienteDropdown').style.display='none';
+  // Restaurar todos los clientes
+  poblarClientes([...new Set(D.map(d=>d.c))].sort());
+  FD=[...D];
+  render();
+}
+
+
+// ── Nombre corto de envase (global) ──────────────────────────────
+function shortE(e){
+  return e.replace('ENVASE COSTENA BACANA 320CC R','Costeña Bacana')
+    .replace('Envase Marron Club Col 330R','Marrón Club Col')
+    .replace('BOTELLA MARRON 1000CC','Botella Marrón 1L')
+    .replace('Envase Marron 750R','Marrón 750R')
+    .replace('Envase Marron 330R','Marrón 330R')
+    .replace('Envase Flint 330R','Flint 330R');
+}
+
+function renderKPIs(){
+  const tv=FD.reduce((s,d)=>s+gV(d),0);
+  const tr=FD.reduce((s,d)=>s+gR(d),0);
+  const df=tr-tv;
+  const pct=tv>0?tr/tv*100:0;
+  const dc=df>=0?'green':'red';
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi blue"><div class="lbl">Total Venta (Unidades)</div><div class="val">${fmtI(tv)}</div><div class="sub">Envase que salió</div></div>
+    <div class="kpi green"><div class="lbl">Total Retorno (Unidades)</div><div class="val">${fmtI(tr)}</div><div class="sub">Devuelto</div></div>
+    <div class="kpi ${dc}"><div class="lbl">Diferencia Neta (Unidades)</div><div class="val">${df>=0?'+':'-'}${fmtN(df)}</div><div class="sub">${df>=0?'Retorno > Venta':'Pendiente retornar'}</div></div>
+    <div class="kpi orange"><div class="lbl">% Retorno</div><div class="val">${pct.toFixed(1)}%</div><div class="sub">sobre venta</div></div>
+    <div class="kpi blue"><div class="lbl">Registros</div><div class="val">${FD.length}</div><div class="sub">movimientos</div></div>`;
+}
+
+function renderTCards(){
+  const colors=['#3266ad','#1d9e75','#d85a30','#d4537e','#7f77dd','#ba7517','#888','#333'];
+  const envs=[...new Set(FD.map(d=>d.e))].sort();
+  if(!envs.length){document.getElementById('tcards').innerHTML='';return;}
+  document.getElementById('tcards').innerHTML=envs.map((e,i)=>{
+    const rs=FD.filter(d=>d.e===e);
+    const v=rs.reduce((s,d)=>s+gV(d),0), r=rs.reduce((s,d)=>s+gR(d),0), df=r-v;
+    const cls=df>0?'pos':df<0?'neg':'zer';
+    const sign=df>0?'+':df<0?'-':'';
+    const pct=v>0?(r/v*100).toFixed(1)+'%':'—';
+    const sn=shortE(e);
+    return `<div class="tc" style="border-left-color:${colors[i%colors.length]}">
+      <div class="tn">${sn}</div>
+      <div class="tv">${fmtI(r)} retorno</div>
+      <div class="td" style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="${cls}">${sign}${fmtN(Math.abs(df))} neto</span>
+        <span style="color:#888">${pct}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCharts(){
+  const g={};
+  FD.forEach(d=>{
+    const k=lbl(d);
+    if(!g[k]) g[k]={v:0,r:0};
+    g[k].v+=gV(d); g[k].r+=gR(d);
+  });
+  const labs=Object.keys(g).sort();
+  const vs=labs.map(k=>Math.round(g[k].v));
+  const rs=labs.map(k=>Math.round(g[k].r));
+
+  // Tendencia
+  if(CH.T) CH.T.destroy();
+  CH.T=new Chart(document.getElementById('cT'),{
+    type:'line',
+    data:{labels:labs,datasets:[
+      {label:'Venta',data:vs,borderColor:'#b83030',backgroundColor:'rgba(184,48,48,.07)',borderWidth:2,tension:.3,pointRadius:3,fill:true,borderDash:[5,3]},
+      {label:'Retorno',data:rs,borderColor:'#1a7a45',backgroundColor:'rgba(26,122,69,.07)',borderWidth:2,tension:.3,pointRadius:3,fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{boxWidth:12,font:{size:11}}},datalabels:{display:false}},
+      scales:{x:{ticks:{maxRotation:45,font:{size:9}}},y:{beginAtZero:true,ticks:{callback:v=>fmtI(v)}}}}
+  });
+
+  // Diferencia neta por envase — etiquetas FUERA de la barra
+  const envs=[...new Set(FD.map(d=>d.e))].sort();
+  const diffs=envs.map(e=>{
+    const sub=FD.filter(d=>d.e===e);
+    return Math.round(sub.reduce((s,d)=>s+gR(d),0)-sub.reduce((s,d)=>s+gV(d),0));
+  });
+  // shortE definida globalmente
+
+  const barH=Math.max(envs.length*64+60,120);
+  document.getElementById('cE').parentElement.style.height=barH+'px';
+  if(CH.E) CH.E.destroy();
+  CH.E=new Chart(document.getElementById('cE'),{
+    type:'bar',
+    data:{
+      labels:envs.map(e=>shortE(e)),
+      datasets:[{
+        label:'Diferencia',data:diffs,
+        backgroundColor:diffs.map(d=>d>=0?'rgba(26,122,69,.82)':'rgba(184,48,48,.82)'),
+        borderRadius:4,borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title:(items)=>envs[items[0].dataIndex],
+          label:(ctx)=>{const v=ctx.raw;return (v>=0?' +':' ')+fmtI(v)+' uds '+(v>=0?'de más':'pendientes');}
+        }},
+        datalabels:{
+          display:true,
+          anchor:(ctx)=>ctx.dataset.data[ctx.dataIndex]>=0?'end':'end',
+          align:(ctx)=>ctx.dataset.data[ctx.dataIndex]>=0?'right':'left',
+          formatter:(v)=>(v>=0?'+':'')+fmtI(v),
+          color:'#222',
+          backgroundColor:(ctx)=>ctx.dataset.data[ctx.dataIndex]>=0?'rgba(26,122,69,.15)':'rgba(184,48,48,.15)',
+          borderRadius:4,
+          padding:{top:2,bottom:2,left:5,right:5},
+          font:{size:12,weight:'bold'}
+        }
+      },
+      scales:{
+        x:{beginAtZero:true,ticks:{callback:v=>fmtI(v),font:{size:10}},
+          afterDataLimits:(axis)=>{
+            const range=Math.max(Math.abs(axis.max),Math.abs(axis.min),1);
+            axis.max=axis.max+range*0.25;
+            axis.min=axis.min-range*0.25;
+          }
+        },
+        y:{ticks:{font:{size:12},color:'#333'},grid:{display:false}}
+      },
+      layout:{padding:{top:4,bottom:4,right:10}}
+    }
+  });
+
+  // Dona clientes
+  const cls=[...new Set(FD.map(d=>d.c))].sort();
+  const crs=cls.map(c=>Math.round(FD.filter(d=>d.c===c).reduce((s,d)=>s+gR(d),0)));
+  const cvs=cls.map(c=>Math.round(FD.filter(d=>d.c===c).reduce((s,d)=>s+gV(d),0)));
+  const totalR=crs.reduce((s,v)=>s+v,0);
+  const PALETA=['#3266ad','#1d9e75','#d85a30','#d4537e','#7f77dd','#ba7517','#2aa3b8','#8a4f2e','#5a8a2e','#b8822a','#6a3aad','#3a8a6e'];
+  const MAX_DONA=8;
+  let donaLabels,donaData,donaBg;
+  if(cls.length<=MAX_DONA){
+    donaLabels=cls; donaData=crs; donaBg=PALETA.slice(0,cls.length);
+  } else {
+    const sorted=[...cls.map((c,i)=>({c,r:crs[i],i}))].sort((a,b)=>b.r-a.r);
+    const top=sorted.slice(0,MAX_DONA-1), otros=sorted.slice(MAX_DONA-1);
+    donaLabels=[...top.map(x=>x.c),'Otros ('+otros.length+')'];
+    donaData=[...top.map(x=>x.r),otros.reduce((s,x)=>s+x.r,0)];
+    donaBg=[...PALETA.slice(0,MAX_DONA-1),'#aaa'];
+  }
+  if(CH.C) CH.C.destroy();
+  CH.C=new Chart(document.getElementById('cC'),{
+    type:'doughnut',
+    data:{labels:donaLabels,datasets:[{data:donaData,backgroundColor:donaBg,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:(ctx)=>ctx.label.split(' ').slice(0,2).join(' ')+': '+fmtI(ctx.raw)+' uds ('+(totalR?((ctx.raw/totalR)*100).toFixed(1):'0')+'%)'}},
+        datalabels:{
+          display:(ctx)=>(ctx.dataset.data[ctx.dataIndex]/totalR)>=0.05,
+          formatter:(v)=>((v/totalR)*100).toFixed(0)+'%',
+          color:'#fff',font:{size:11,weight:'bold'}
+        }
+      }
+    }
+  });
+  // Tabla de clientes
+  const sorted2=[...cls.map((c,i)=>({c,r:crs[i],v:cvs[i],bg:PALETA[i%PALETA.length]}))].sort((a,b)=>b.r-a.r);
+  document.getElementById('tblClientes').innerHTML=`<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:#f0f0eb">
+      <th style="padding:4px 6px;font-size:10px;text-align:left">Cliente</th>
+      <th style="padding:4px 6px;font-size:10px;text-align:right">Venta</th>
+      <th style="padding:4px 6px;font-size:10px;text-align:right">Retorno</th>
+      <th style="padding:4px 6px;font-size:10px;text-align:right">Dif.</th>
+      <th style="padding:4px 6px;font-size:10px;text-align:right">%</th>
+    </tr></thead>
+    <tbody>${sorted2.map(({c,r,v,bg})=>{
+      const df=r-v,cls2=df>=0?'color:#1a7a45':'color:#b83030',pct=v>0?((r/v)*100).toFixed(1)+'%':'—';
+      return `<tr><td style="padding:4px 6px;font-size:10px;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${bg};margin-right:4px"></span>${c}</td>
+        <td style="padding:4px 6px;font-size:10px;text-align:right">${fmtI(v)}</td>
+        <td style="padding:4px 6px;font-size:10px;text-align:right">${fmtI(r)}</td>
+        <td style="padding:4px 6px;font-size:10px;text-align:right;${cls2}">${df>=0?'+':''}${fmtI(df)}</td>
+        <td style="padding:4px 6px;font-size:10px;text-align:right">${pct}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+
+  // % Retorno
+  const pcts=envs.map(e=>{
+    const sub=FD.filter(d=>d.e===e);
+    const v=sub.reduce((s,d)=>s+gV(d),0),r=sub.reduce((s,d)=>s+gR(d),0);
+    return v>0?+(r/v*100).toFixed(1):0;
+  });
+  if(CH.P) CH.P.destroy();
+  CH.P=new Chart(document.getElementById('cP'),{
+    type:'bar',
+    data:{labels:envs.map(e=>shortE(e)),datasets:[{
+      label:'% Retorno',data:pcts,
+      backgroundColor:pcts.map(p=>p>=100?'rgba(26,122,69,.82)':p>=70?'rgba(186,117,23,.82)':'rgba(184,48,48,.82)'),
+      borderRadius:4
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{title:(items)=>envs[items[0].dataIndex]}},
+        datalabels:{display:true,anchor:'center',align:'center',
+          formatter:v=>v+'%',color:'#fff',font:{size:12,weight:'bold'}}
+      },
+      scales:{x:{ticks:{font:{size:10},maxRotation:30}},y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}
+    }
+  });
+}
+
+function renderSaldo(){
+  const allEnvs=[...new Set(D.map(d=>d.e))].sort();
+  const allFechas=[...new Set(D.map(d=>d.f))].sort();
+  const fechasVis=[...new Set(FD.map(d=>d.f))].sort();
+  const acum={};
+  allEnvs.forEach(e=>acum[e]=0);
+  const spf={};
+  allFechas.forEach(f=>{
+    spf[f]={};
+    allEnvs.forEach(e=>{
+      const rows=D.filter(d=>d.f===f&&d.e===e);
+      const vd=rows.reduce((s,d)=>s+gV(d),0),rd=rows.reduce((s,d)=>s+gR(d),0);
+      acum[e]=Math.round(acum[e]+vd-rd);
+      spf[f][e]={vd:Math.round(vd),rd:Math.round(rd),sal:acum[e]};
+    });
+  });
+  const ev=allEnvs.filter(e=>fechasVis.some(f=>(spf[f]||{})[e]?.vd>0||(spf[f]||{})[e]?.rd>0));
+  const show=ev.length>0?ev:allEnvs;
+  const sn=e=>e.replace('Envase ','').replace('ENVASE ','').replace(' 330R','').replace(' 320CC R','').replace(' 750R','').replace(' 1000CC','').replace('Club Col ','CC ');
+  const cH='background:#1a3a5c;color:#fff;padding:7px 8px;font-size:10px;white-space:nowrap';
+  const cS='background:#254e7a;color:#cde;padding:5px 8px;font-size:9px;white-space:nowrap';
+  let th1=`<tr><th style="${cH};position:sticky;left:0;z-index:2;min-width:90px">Fecha</th>`;
+  show.forEach(e=>th1+=`<th colspan="3" style="${cH};text-align:center;border-left:2px solid rgba(255,255,255,.2)">${sn(e)}</th>`);
+  th1+=`<th style="${cH};text-align:right;border-left:2px solid rgba(255,255,255,.2);min-width:80px">Total pend.</th></tr>`;
+  let th2=`<tr><th style="${cS};position:sticky;left:0;z-index:2"></th>`;
+  show.forEach(()=>th2+=`<th style="${cS};text-align:right;border-left:2px solid rgba(255,255,255,.1)">Venta</th><th style="${cS};text-align:right">Retorno</th><th style="${cS};text-align:right;font-weight:700">Saldo</th>`);
+  th2+=`<th style="${cS};text-align:right;border-left:2px solid rgba(255,255,255,.1)">Saldo</th></tr>`;
+  const rows=fechasVis.map(f=>{
+    const sp=spf[f]||{};
+    let tot=0; show.forEach(e=>tot+=(sp[e]||{sal:0}).sal); tot=Math.round(tot);
+    const tC=tot>0?'color:#b83030;font-weight:700':tot<0?'color:#1a7a45;font-weight:700':'color:#aaa';
+    let cells='';
+    show.forEach(e=>{
+      const {vd=0,rd=0,sal=0}=sp[e]||{};
+      const sC=sal>0?'color:#b83030;font-weight:700':sal<0?'color:#1a7a45;font-weight:700':'color:#aaa';
+      cells+=`<td style="text-align:right;border-left:2px solid #eee">${vd>0?fmtI(vd):'—'}</td>
+              <td style="text-align:right">${rd>0?fmtI(rd):'—'}</td>
+              <td style="text-align:right;${sC}">${sal===0?'0':(sal>0?'+':'-')+fmtN(sal)}</td>`;
+    });
+    return `<tr><td style="font-weight:700;position:sticky;left:0;background:#fff;border-right:1px solid #ddd;z-index:1;white-space:nowrap">${f}</td>${cells}<td style="text-align:right;border-left:2px solid #ddd;${tC}">${tot===0?'0':(tot>0?'+':'-')+fmtN(Math.abs(tot))}</td></tr>`;
+  }).join('');
+  const lastF=fechasVis[fechasVis.length-1]||allFechas[allFechas.length-1];
+  let tC2=''; let gt=0;
+  show.forEach(e=>{
+    const sal=(spf[lastF]||{})[e]?.sal||0; gt+=sal;
+    const sc=sal>0?'color:#b83030':sal<0?'color:#1a7a45':'color:#aaa';
+    tC2+=`<td style="border-left:2px solid #ccc"></td><td></td><td style="text-align:right;font-weight:700;${sc}">${sal===0?'0':(sal>0?'+':'-')+fmtN(Math.abs(sal))}</td>`;
+  });
+  gt=Math.round(gt);
+  const gtC=gt>0?'color:#b83030':gt<0?'color:#1a7a45':'color:#aaa';
+  const foot=`<tfoot><tr style="background:#f0f0eb;font-weight:700"><td style="position:sticky;left:0;background:#f0f0eb;z-index:1">Saldo final</td>${tC2}<td style="text-align:right;border-left:2px solid #ccc;${gtC}">${gt===0?'0':(gt>0?'+':'-')+fmtN(Math.abs(gt))}</td></tr></tfoot>`;
+  document.getElementById('tbl').innerHTML=`<p class="note">🔴 Positivo = pendiente de retornar &nbsp;|&nbsp; 🟢 Negativo = retornaron más de lo que salió</p>
+    <table style="min-width:600px"><thead>${th1}${th2}</thead><tbody>${rows}</tbody>${foot}</table>`;
+}
+
+function renderResumen(){
+  const g={};
+  FD.forEach(d=>{const k=lbl(d);if(!g[k])g[k]={v:0,r:0};g[k].v+=gV(d);g[k].r+=gR(d);});
+  const rows=Object.keys(g).sort().map(k=>{
+    const v=Math.round(g[k].v),r=Math.round(g[k].r),df=r-v;
+    const cls=df>=0?'pos':'neg';
+    return `<tr><td><b>${k}</b></td><td style="text-align:right">${fmtI(v)}</td><td style="text-align:right">${fmtI(r)}</td><td style="text-align:right" class="${cls}">${df>=0?'+':'-'}${fmtN(df)}</td><td style="text-align:right">${v>0?((r/v)*100).toFixed(1)+'%':'—'}</td></tr>`;
+  }).join('');
+  document.getElementById('tbl').innerHTML=`<table><thead><tr><th>Período</th><th style="text-align:right">Venta (uds)</th><th style="text-align:right">Retorno (uds)</th><th style="text-align:right">Diferencia</th><th style="text-align:right">% Retorno</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderEnvase(){
+  const envs=[...new Set(FD.map(d=>d.e))].sort();
+  const rows=envs.map(e=>{
+    const sub=FD.filter(d=>d.e===e);
+    const v=Math.round(sub.reduce((s,d)=>s+gV(d),0)),r=Math.round(sub.reduce((s,d)=>s+gR(d),0)),df=r-v;
+    const cls=df>=0?'pos':'neg';
+    return `<tr><td>${e}</td><td style="text-align:right">${fmtI(v)}</td><td style="text-align:right">${fmtI(r)}</td><td style="text-align:right" class="${cls}">${df>=0?'+':'-'}${fmtN(df)}</td><td style="text-align:right">${v>0?((r/v)*100).toFixed(1)+'%':'—'}</td></tr>`;
+  }).join('');
+  document.getElementById('tbl').innerHTML=`<table><thead><tr><th>Tipo de Envase</th><th style="text-align:right">Venta (uds)</th><th style="text-align:right">Retorno (uds)</th><th style="text-align:right">Diferencia</th><th style="text-align:right">% Retorno</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderTx(){
+  const sorted=[...FD].sort((a,b)=>a.f.localeCompare(b.f));
+  const rows=sorted.slice(0,200).map(d=>`<tr>
+    <td style="white-space:nowrap">${d.f}</td><td>${d.c.split(' ').slice(0,2).join(' ')}</td>
+    <td>${d.e}</td><td><span class="${d.m==='Venta'?'bv':'br'}">${d.m}</span></td>
+    <td style="text-align:right">${fmtI(Math.abs(d.u))}</td><td><span class="bp">${d.p}</span></td>
+  </tr>`).join('');
+  document.getElementById('tbl').innerHTML=`<table><thead><tr><th>Fecha</th><th>Cliente</th><th>Envase</th><th>Tipo</th><th style="text-align:right">Unidades</th><th>PMO</th></tr></thead><tbody>${rows}</tbody></table>
+  ${sorted.length>200?'<p style="color:#aaa;font-size:10px;padding:8px">Mostrando 200 de '+sorted.length+' registros</p>':''}`;
+}
+
+function renderVisual(){
+  // D-1: usar la fecha más reciente disponible en los datos filtrados
+  const fechas=[...new Set(FD.map(d=>d.f))].sort();
+  if(!fechas.length){
+    document.getElementById('tbl').innerHTML='<p class="note" style="padding:16px">No hay datos para mostrar.</p>';
+    return;
+  }
+  const ultimaFecha=fechas[fechas.length-1];
+  const anteriorFecha=fechas.length>1?fechas[fechas.length-2]:null;
+
+  // Calcular saldo acumulado hasta la última fecha (sobre datos completos D, respetando filtros de cliente/envase)
+  const allFechas=[...new Set(D.map(d=>d.f))].sort();
+  const allEnvs=[...new Set(D.map(d=>d.e))].sort();
+
+  // Acumulado por cliente+envase hasta la última fecha visible
+  const clientes=[...new Set(FD.map(d=>d.c))].sort();
+
+  // Para cada cliente: saldo acumulado por envase hasta ultimaFecha
+  // saldo = sum(venta) - sum(retorno) desde el inicio hasta ultimaFecha
+  const resumen=clientes.map(cl=>{
+    const envs=[...new Set(FD.filter(d=>d.c===cl).map(d=>d.e))].sort();
+    const detalle=envs.map(env=>{
+      const rows=D.filter(d=>d.c===cl && d.e===env && d.f<=ultimaFecha);
+      const totalV=rows.reduce((s,d)=>s+gV(d),0);
+      const totalR=rows.reduce((s,d)=>s+gR(d),0);
+      const saldo=Math.round(totalV-totalR); // positivo=pendiente, negativo=retornó de más
+      // Movimiento del día anterior para comparar tendencia
+      const rowsAnt=anteriorFecha?D.filter(d=>d.c===cl&&d.e===env&&d.f===anteriorFecha):[];
+      const ventaAnt=Math.round(rowsAnt.reduce((s,d)=>s+gV(d),0));
+      const retornoAnt=Math.round(rowsAnt.reduce((s,d)=>s+gR(d),0));
+      return {env,totalV:Math.round(totalV),totalR:Math.round(totalR),saldo,ventaAnt,retornoAnt};
+    });
+    const saldoTotal=detalle.reduce((s,d)=>s+d.saldo,0);
+    return {cl,detalle,saldoTotal};
+  });
+
+  // Ordenar: primero los que tienen más pendiente (peor situación)
+  resumen.sort((a,b)=>b.saldoTotal-a.saldoTotal);
+
+  const estadoBadge=(saldo)=>{
+    if(saldo>0) return `<span style="background:#fce9e6;color:#b83030;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">🔴 Pendiente</span>`;
+    if(saldo<0) return `<span style="background:#e6f4ed;color:#1a7a45;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">🟢 A favor</span>`;
+    return `<span style="background:#f0f0eb;color:#666;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">⚪ Cero</span>`;
+  };
+
+  const barraVisual=(saldo,maxAbs)=>{
+    if(maxAbs===0) return '';
+    const pct=Math.min(Math.abs(saldo)/maxAbs*100,100);
+    const color=saldo>0?'#b83030':saldo<0?'#1a7a45':'#ccc';
+    const dir=saldo>0?'left':'right';
+    return `<div style="position:relative;height:6px;background:#eee;border-radius:3px;width:80px;display:inline-block;vertical-align:middle;margin:0 6px">
+      <div style="position:absolute;${dir}:0;width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width .3s"></div>
+    </div>`;
+  };
+
+  const maxAbs=Math.max(...resumen.map(r=>Math.abs(r.saldoTotal)),1);
+  const maxEnvAbs=Math.max(...resumen.flatMap(r=>r.detalle.map(d=>Math.abs(d.saldo))),1);
+
+  const cards=resumen.map(({cl,detalle,saldoTotal})=>{
+    const pct=detalle.reduce((s,d)=>s+d.totalR,0)/Math.max(detalle.reduce((s,d)=>s+d.totalV,0),1)*100;
+    const headerColor=saldoTotal>0?'border-left:4px solid #b83030':saldoTotal<0?'border-left:4px solid #1a7a45':'border-left:4px solid #ccc';
+    const bgHeader=saldoTotal>0?'background:linear-gradient(135deg,#fff5f5,#fff)':saldoTotal<0?'background:linear-gradient(135deg,#f0faf4,#fff)':'background:#fff';
+
+    const filas=detalle.map(({env,totalV,totalR,saldo})=>{
+      const sCls=saldo>0?'color:#b83030;font-weight:700':saldo<0?'color:#1a7a45;font-weight:700':'color:#aaa';
+      const sign=saldo>0?'+':saldo<0?'-':'';
+      return `<tr>
+        <td style="padding:5px 8px;font-size:11px;color:#444">${shortE(env)}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right">${fmtI(totalV)}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right">${fmtI(totalR)}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right;${sCls}">
+          ${barraVisual(saldo,maxEnvAbs)}${sign}${fmtN(saldo)}
+        </td>
+        <td style="text-align:center;padding:5px 8px">${estadoBadge(saldo)}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div style="background:#fff;border-radius:10px;border:1px solid #e0ddd5;${headerColor};margin-bottom:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div style="padding:12px 16px;${bgHeader};border-bottom:1px solid #f0ede5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1a3a5c">${cl}</div>
+          <div style="font-size:11px;color:#888;margin-top:2px">Corte al ${ultimaFecha}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:10px;color:#888;text-transform:uppercase">% Retorno</div>
+            <div style="font-size:16px;font-weight:700;color:${pct>=100?'#1a7a45':pct>=70?'#9a6800':'#b83030'}">${pct.toFixed(1)}%</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:10px;color:#888;text-transform:uppercase">Saldo neto</div>
+            <div style="font-size:16px;font-weight:700;${saldoTotal>0?'color:#b83030':saldoTotal<0?'color:#1a7a45':'color:#aaa'}">
+              ${saldoTotal>0?'+':saldoTotal<0?'-':''}${fmtN(saldoTotal)} uds
+            </div>
+          </div>
+          <div>${estadoBadge(saldoTotal)}</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8f8f5">
+            <th style="padding:6px 8px;font-size:10px;text-align:left;color:#666">Envase</th>
+            <th style="padding:6px 8px;font-size:10px;text-align:right;color:#666">Venta</th>
+            <th style="padding:6px 8px;font-size:10px;text-align:right;color:#666">Retorno</th>
+            <th style="padding:6px 8px;font-size:10px;text-align:right;color:#666">Saldo acum.</th>
+            <th style="padding:6px 8px;font-size:10px;text-align:center;color:#666">Estado</th>
+          </tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Resumen ejecutivo arriba
+  const totalPend=resumen.filter(r=>r.saldoTotal>0).length;
+  const totalFavor=resumen.filter(r=>r.saldoTotal<0).length;
+  const totalCero=resumen.filter(r=>r.saldoTotal===0).length;
+
+  const summary=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+    <div style="background:#fce9e6;border-radius:8px;padding:12px;text-align:center;border:1px solid #f5c6c0">
+      <div style="font-size:22px;font-weight:700;color:#b83030">${totalPend}</div>
+      <div style="font-size:11px;color:#b83030;font-weight:600">🔴 Con pendiente</div>
+    </div>
+    <div style="background:#e6f4ed;border-radius:8px;padding:12px;text-align:center;border:1px solid #b7dfca">
+      <div style="font-size:22px;font-weight:700;color:#1a7a45">${totalFavor}</div>
+      <div style="font-size:11px;color:#1a7a45;font-weight:600">🟢 A favor / OK</div>
+    </div>
+    <div style="background:#f0f0eb;border-radius:8px;padding:12px;text-align:center;border:1px solid #ddd">
+      <div style="font-size:22px;font-weight:700;color:#666">${totalCero}</div>
+      <div style="font-size:11px;color:#666;font-weight:600">⚪ En cero</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px;text-align:center;border:1px solid #ddd">
+      <div style="font-size:22px;font-weight:700;color:#1a3a5c">${resumen.length}</div>
+      <div style="font-size:11px;color:#1a3a5c;font-weight:600">Total clientes</div>
+    </div>
+  </div>
+  <p class="note" style="margin-bottom:12px">Saldo acumulado hasta <b>${ultimaFecha}</b>. 🔴 Positivo = envase pendiente de retornar &nbsp;|&nbsp; 🟢 Negativo = retornaron más de lo que salió. Ordenado de mayor a menor pendiente.</p>`;
+
+  document.getElementById('tbl').innerHTML=summary+cards;
+}
+
+
+  if(TAB==='resumen') renderResumen();
+  else if(TAB==='saldo') renderSaldo();
+  else if(TAB==='envase') renderEnvase();
+  else renderTx();
+}
+
+function renderTabla(){
+  if(TAB==='resumen') renderResumen();
+  else if(TAB==='visual') renderVisual();
+  else if(TAB==='saldo') renderSaldo();
+  else if(TAB==='envase') renderEnvase();
+  else renderTx();
+}
+
+function setTab(t,el){
+  TAB=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  renderTabla();
+}
+
+function render(){
+  renderKPIs();
+  renderTCards();
+  renderCharts();
+  renderTabla();
+}
+
+// init y render son llamados por cargarDatos() al cargar la página
+</script>
+</body>
+</html>
